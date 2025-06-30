@@ -1,27 +1,41 @@
 <!-- src/views/ChatView.vue -->
 <script setup lang="ts">
 import { ref } from 'vue'
+
+// Create a variable to store the input message
 const inputMsg = ref('')
+
+// Method deals with sending the user's chat to the backend
 const sendMsg = async () => {
   const msg = inputMsg.value.trim()
+
+  // Don't send anything if empty message
   if (msg === '') return
 
+  // Call the backend API endpoint
   try {
+    // Backend location
     const response = await fetch('http://localhost:3000/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+
+      // Sends the user message
       body: JSON.stringify({ message: msg }),
     })
 
+    // Check if the server gave an error
     if (!response.ok) {
       throw new Error('Network response was not ok')
     }
+
+    // Catch the error and display it
   } catch (error) {
     console.error('There was a problem with the fetch operation: ', error)
   }
 
+  // Clear the message after it gets sent
   inputMsg.value = ''
 }
 </script>
@@ -34,6 +48,7 @@ const sendMsg = async () => {
         <p>This is where the chat interface will go.</p>
       </div>
       <div class="inputArea">
+        <!-- This will send the input in the text box by calling send msg. Also clicking the button will send the input -->
         <input
           v-model="inputMsg"
           @keydown.enter="sendMsg"
