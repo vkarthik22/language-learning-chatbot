@@ -1,6 +1,29 @@
 <!-- src/views/ChatView.vue -->
 <script setup lang="ts">
-// You will add your chat logic here later
+import { ref } from 'vue'
+const inputMsg = ref('')
+const sendMsg = async () => {
+  const msg = inputMsg.value.trim()
+  if (msg === '') return
+
+  try {
+    const response = await fetch('http://localhost:3000/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: msg }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok')
+    }
+  } catch (error) {
+    console.error('There was a problem with the fetch operation: ', error)
+  }
+
+  inputMsg.value = ''
+}
 </script>
 
 <template>
@@ -11,8 +34,13 @@
         <p>This is where the chat interface will go.</p>
       </div>
       <div class="inputArea">
-        <input type="text" placeholder="Type your message here ..." />
-        <button>Send</button>
+        <input
+          v-model="inputMsg"
+          @keydown.enter="sendMsg"
+          type="text"
+          placeholder="Type your message here ..."
+        />
+        <button @click="sendMsg">Send</button>
       </div>
     </div>
   </main>
