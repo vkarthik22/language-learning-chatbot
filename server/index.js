@@ -1,5 +1,11 @@
 import express from 'express'
 import cors from 'cors'
+import { GoogleGenAI } from '@google/genai'
+import dotenv from 'dotenv'
+
+// Load env file with API Key
+dotenv.config()
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY)
 
 const app = express()
 const port = 3000
@@ -12,12 +18,36 @@ app.get('/', (req, res) => {
   res.send('Hello from your Node.js Backend!')
 })
 
-// Post endpoint gets chats from send button on UI and currently gives dummy response
-app.post('/chat', (req, res) => {
-  const userMsg = req.body.message
-  console.log('This is the user  message: ', userMsg)
-  const geminiMsg = `Message recieved: "${userMsg}"`
-  res.json({ reply: geminiMsg })
+// Post endpoint gets chats from send button on UI and get Gemini response
+app.post('/chat', async (req, res) => {
+  try {
+    // User's input message
+    const userMsg = req.body.message
+
+    // Test that message gets sent
+    console.log('This is the user  message: ', userMsg)
+
+    // Call the api to generate response and configure response model
+    const geminiMsg = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: userMsg,
+
+      // Currently disable thinking feature to get quick response
+      config: {
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+      },
+    })
+
+    // Respond with Gemini response
+    res.json({ reply: geminiMsg.text })
+    console.log(geminiMsg.text)
+  } catch (error) {
+    // Catch errors and respond
+    console.error('Gemini API error: ', error)
+    res.status(500).json({ reply: 'Sorry, I ran into an error.' })
+  }
 })
 
 // Start server and listen for requests on the port
