@@ -1,9 +1,30 @@
 <!-- src/views/ChatView.vue -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
+
+// Create an interface for a message
+interface Message {
+  id: number
+  text: string
+  sender: 'user' | 'ai'
+}
+
+// Create an array to store all the chats
+const fullChat = ref<Message[]>([{ id: 1, text: 'Hello! Ask me anything!', sender: 'ai' }])
 
 // Create a variable to store the input message
 const inputMsg = ref('')
+const messageContainer = ref<HTMLElement | null>(null)
+
+// Function to automatically scroll to the bottom when new messages are added
+const scrollToBottom = () => {
+  // nextTick waits for the DOM to update before trying to scroll
+  nextTick(() => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    }
+  })
+}
 
 // Method deals with sending the user's chat to the backend
 const sendMsg = async () => {
@@ -11,6 +32,9 @@ const sendMsg = async () => {
 
   // Don't send anything if empty message
   if (msg === '') return
+
+  // Add the message to fullChat to be displayed visually
+  fullChat.value.push({ id: fullChat.value.length + 1, text: msg, sender: 'user' })
 
   // Call the backend API endpoint
   try {
@@ -30,9 +54,22 @@ const sendMsg = async () => {
       throw new Error('Network response was not ok')
     }
 
+    // Get Gemini response and add it to fullChat
+    const data = await response.json()
+    const aiMsg = data.reply
+    fullChat.value.push({ id: Date.now() + 1, text: aiMsg, sender: 'ai' })
+    scrollToBottom()
+
     // Catch the error and display it
   } catch (error) {
     console.error('There was a problem with the fetch operation: ', error)
+    fullChat.value.push({
+      id: Date.now() + 1,
+      text: 'Sorry, I had trouble connecting. Please try again.',
+      sender: 'ai',
+    })
+
+    scrollToBottom()
   }
 
   // Clear the message after it gets sent
@@ -43,9 +80,19 @@ const sendMsg = async () => {
 <template>
   <main>
     <div class="chatbox">
-      <div class="messages">
-        <h1>Welcome to your Language Chatbot!</h1>
-        <p>This is where the chat interface will go.</p>
+      <!--- Add a 'ref' to the messagaes container from earlier to control scrolling-->
+      <div class="messages" ref="messageContainer">
+        <!-- Loop Through the full chat-->
+        <div
+          v-for="message in fullChat"
+          v-bind:key="message.id"
+          class="message-row"
+          v-bind:class="message.sender"
+        >
+          <div class="bubble">
+            {{ message.text }}
+          </div>
+        </div>
       </div>
       <div class="inputArea">
         <!-- This will send the input in the text box by calling send msg. Also clicking the button will send the input -->
@@ -73,10 +120,10 @@ main {
 
 .chatbox {
   width: 90%;
-  max-width: 80vw;
-  height: 70vh;
+  max-width: 800px;
+  height: 80vh;
   background-color: white;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -87,7 +134,42 @@ main {
 .messages {
   flex-grow: 1;
   overflow-y: auto;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+}
+.message-row {
+  display: flex;
+}
+
+.message-row.user {
+  justify-content: flex-end;
+}
+
+.message-row.ai {
+  justify-content: flex-start;
+}
+
+.bubble {
+  padding: 10px 15px;
+  border-radius: 18px;
+  max-width: 70%;
+  word-wrap: break-word;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.message-row.user .bubble {
+  background-color: #1f88eb;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message-row.ai .bubble {
+  background-color: #e5e5ea;
+  color: black;
+  border-bottom-left-radius: 4px;
 }
 
 .inputArea {
