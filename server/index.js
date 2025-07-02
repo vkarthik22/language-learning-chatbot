@@ -24,9 +24,6 @@ app.post('/chat', async (req, res) => {
     // User's input message
     const userMsg = req.body.message
 
-    // Test that message gets sent
-    console.log('This is the user  message: ', userMsg)
-
     // Call the api to generate response and configure response model
     const geminiMsg = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -41,8 +38,8 @@ app.post('/chat', async (req, res) => {
     })
 
     // Respond with Gemini response
-    res.json({ reply: geminiMsg.text })
-    console.log(geminiMsg.text)
+    const aiReply = geminiMsg.text
+    res.json({ reply: aiReply })
   } catch (error) {
     // Catch errors and respond
     console.error('Gemini API error: ', error)
